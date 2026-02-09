@@ -1,112 +1,69 @@
-# Mean-Reversion-Strategy-with-Trend-Filter
-Overview
+# SPY Mean Reversion with 6-Month Trend Filter
 
-This project implements a simple mean reversion trading strategy on the SPY ETF, enhanced with a long-term trend filter.
-The idea is to buy short-term market dips only when the broader market trend remains positive (wich is a 6 month trend).
+This project backtests a quantitative trading strategy on the SPY ETF using daily data. The strategy combines short-term mean reversion with a long-term trend filter in order to control risk and avoid trading during unfavorable market regimes.
 
-The strategy is designed to reduce large drawdowns while still capturing a significant portion of market upside.
-
-Strategy Logic
-
-The strategy follows two core principles:
-
-Mean Reversion (Entry Condition)
-
-Enter the market if the previous trading day had a strong negative return (e.g. ≤ −0.5%).
-
-This represents short-term panic or overreaction.
-
-Trend Filter (Risk Control)
-
-Trades are only allowed if the 6-month momentum is positive.
-
-This avoids buying dips during long-term downtrends.
-
-Positions are entered the day after the signal to avoid look-ahead bias.
-
-Data
-
+Data:
 Asset: SPY ETF
-
 Frequency: Daily
-
 Data source: yfinance
-
 Price used: Close
+Start date: 2010-01-01
 
-Returns: daily percentage returns
+Daily returns are calculated using percentage change of closing prices.
 
-Implementation Details
+Strategy Logic:
+A 6-month momentum filter is used to define the long-term market regime. Six months are approximated as 126 trading days. Trades are allowed only when the 6-month momentum is positive.
 
-Signal
+mom_6m = Close.pct_change(126)
+Condition: mom_6m > 0
+
+A mean reversion entry signal is generated after a strong negative daily return. A buy signal occurs when the previous day return is less than or equal to −0.5% and the 6-month momentum is positive.
 
 signal = 1 if:
+(mom_6m > 0) AND (daily_return <= -0.005)
 
-previous day return ≤ −0.5%
-
-AND 6-month return > 0
-
-Position
+To avoid look-ahead bias, positions are entered one day after the signal using a shift operation.
 
 position = signal.shift(1)
 
-Strategy Return
+A rolling holding window is applied to the position:
 
-strategy_return = position × daily_return
+position = signal.shift(1).rolling(5).max()
 
-Equity Curve
+This keeps the strategy invested for up to five trading days after a signal. If new signals occur during this period, the holding window is extended.
 
-Computed using cumulative compounded returns
+Strategy returns are calculated as:
 
-Performance Metrics
+strategy_return = position * daily_return
 
-The strategy is evaluated using:
+The equity curve is computed using compounded returns:
 
-Final Equity
+equity = (1 + strategy_return).cumprod()
 
-Maximum Drawdown
+Evaluation:
+The strategy is evaluated using the following metrics:
+Final equity
+Maximum drawdown
+Sharpe ratio (annualized)
+Time in market
 
-Sharpe Ratio (annualized)
+Performance is compared against a Buy & Hold benchmark on SPY.
 
-Time in Market
-
-Results are compared against a Buy & Hold benchmark on SPY.
-
-Train / Test Validation
-
-To reduce overfitting risk, the strategy is evaluated using a train/test split:
-
+Validation:
+To reduce overfitting risk, the strategy can be evaluated using a simple train/test split.
 Train period: before 2017
-
 Test period: 2017 onward
 
-The strategy maintains similar behavior across both periods, suggesting that results are not driven solely by curve fitting.
+Results Summary:
 
-Risk Considerations
+The table below summarizes final equity and maximum drawdown for the strategy and a Buy & Hold benchmark.
 
-This strategy is not risk-free. Potential risks include:
+Train period:
+Strategy: Final equity 1.64, Max drawdown −15.7%
+Buy & Hold: Final equity 2.28, Max drawdown −18.6%
 
-Large market crashes where mean reversion fails
+Test period:
+Strategy: Final equity 3.26, Max drawdown −25.6%
+Buy & Hold: Final equity 8.17, Max drawdown −33.7%
 
-Underperformance during strong bull markets
-
-Fewer trading opportunities due to strict filters
-
-The strategy prioritizes drawdown control over maximum possible return.
-
-Conclusion
-
-This project demonstrates a complete quantitative research pipeline:
-
-hypothesis-driven strategy
-
-clean signal construction
-
-proper backtesting
-
-risk-aware evaluation
-
-out-of-sample validation
-
-The goal is not to maximize historical returns, but to build a robust and understandable trading framework.
-Add project README
+The strategy underperforms Buy & Hold in terms of absolute returns, but consistently exhibits lower drawdowns in both train and test periods. This behavior is consistent with the strategy design, which prioritizes risk control and drawdown reduction over maximum return.
