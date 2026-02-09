@@ -1,3 +1,8 @@
+# SPY Mean Reversion Strategy with 6-Month Trend Filter
+# Idea: buy short-term dips only in a positive long-term trend
+# Asset: SPY ETF
+# Frequency: Daily
+# Data source: yfinance
 {
  "cells": [
   {
