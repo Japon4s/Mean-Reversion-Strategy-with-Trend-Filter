@@ -1,0 +1,1 @@
+# Mean-Reversion-Strategy-with-Trend-Filter
